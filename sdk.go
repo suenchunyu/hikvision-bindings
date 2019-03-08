@@ -16,6 +16,7 @@ type HikVisionSDKConfig struct {
 
 type HikVisionSDK struct {
 	env *HikVisionEnv
+	rec *chan<- Package
 }
 
 var DefaultConfig = &HikVisionSDKConfig{
@@ -45,15 +46,18 @@ func (sdk *HikVisionSDK) CloseRealTimePlayer() error {
 	return nil
 }
 
-func (sdk *HikVisionSDK) RegistryReceiver(rec *chan<- Package) error {
+// Only call once!!
+func (sdk *HikVisionSDK) RegistryReceiver(rec *chan<- Package) {
 	if rec == nil || BlobChan == nil {
-		return errors.New("cannot registry receiver chan")
+		panic("cannot registry receiver chan")
+	} else if sdk.rec != nil {
+		panic("RegistryReceiver func only can be call once")
 	}
+	sdk.rec = rec
 	go func() {
 		select {
 		case pkg := <-BlobChan:
 			*rec <- pkg
 		}
 	}()
-	return nil
 }
