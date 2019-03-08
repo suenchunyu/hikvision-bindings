@@ -13,7 +13,7 @@ func publishPackage(p *C.Package) {
 	defer C.free(unsafe.Pointer(p.data))
 	defer C.free(unsafe.Pointer(p))
 
-	blobChan <- Package{
+	BlobChan <- Package{
 		blob,
 	}
 }

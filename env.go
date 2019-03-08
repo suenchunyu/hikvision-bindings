@@ -23,6 +23,8 @@ const (
 type HikVisionEnv struct {
 	DeviceInfo *C.NET_DVR_DEVICEINFO
 	UserID     int
+	Config     *HikVisionSDKConfig
+	PlayerHdl  int
 }
 
 func initEnv(config *HikVisionSDKConfig) *HikVisionEnv {
@@ -62,6 +64,7 @@ Error:
 	return &HikVisionEnv{
 		DeviceInfo: &device,
 		UserID:     userId,
+		Config:     config,
 	}
 }
 
