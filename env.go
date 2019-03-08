@@ -3,8 +3,8 @@ package hik_vision_sdk
 //#cgo CFLAGS: -I./include/hikvision
 //#cgo LDFLAGS: -L./lib64/hikvision -lhcnetsdk
 /*
-#include <stdlib.h>
 #include "HCNetSDK.h"
+#include <stdlib.h>
 */
 import "C"
 import (
@@ -34,7 +34,7 @@ func initEnv(config *HikVisionSDKConfig) *HikVisionEnv {
 	defer C.free(unsafe.Pointer(cIp))
 	cUsername := C.CString(username)
 	defer C.free(unsafe.Pointer(cUsername))
-	cPassword := C.String(password)
+	cPassword := C.CString(password)
 	defer C.free(unsafe.Pointer(cPassword))
 	var userId int
 
@@ -53,7 +53,7 @@ func initEnv(config *HikVisionSDKConfig) *HikVisionEnv {
 
 	// active device
 	if userId = int(C.NET_DVR_Login(cIp, C.WORD(port), cUsername, cPassword,
-		(*C.NET_DVR_DEVICEINFO)(unsafe.Pointer(&device)))); userId == LoginFailed {
+		device)); userId == LoginFailed {
 		goto Error
 	}
 
@@ -69,7 +69,8 @@ Error:
 }
 
 func parseSourceAddr(url string) (ip string, port int, username string, password string) {
-	urls := strings.Split(url, "@")
+	temp := strings.Split(url, "hik://")
+	urls := strings.Split(temp[1], "@")
 	serverAndPort := strings.Split(urls[0], ":")
 	usernameAndPassword := strings.Split(urls[1], ":")
 	ip = serverAndPort[0]

@@ -2,6 +2,7 @@ package hik_vision_sdk
 
 //#cgo CFLAGS: -I./internal
 /*
+#include <stdlib.h>
 #include "chan.h"
 */
 import "C"

@@ -1,0 +1,6 @@
+max_login_user = 2048
+max_alarm_num = 2048
+sdk_path = ""
+source_addr = "hik://127.0.0.1:8000@admin:admin"
+real_play_link_mode = 1
+real_play_stream_type = 1
