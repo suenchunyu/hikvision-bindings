@@ -84,6 +84,7 @@ func parseSourceAddr(url string) (ip string, port int, username string, password
 }
 
 func (e *HikVisionEnv) release() {
+	defer close(BlobChan)
 	if rt := int(C.NET_DVR_Logout(C.LONG(e.UserID))); rt != SUCCEED {
 		goto Error
 	}

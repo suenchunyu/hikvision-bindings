@@ -45,4 +45,15 @@ func (sdk *HikVisionSDK) CloseRealTimePlayer() error {
 	return nil
 }
 
-// TODO: Get real time player's stream data from callback function
+func (sdk *HikVisionSDK) RegistryReceiver(rec *chan<- Package) error {
+	if rec == nil || BlobChan == nil {
+		return errors.New("cannot registry receiver chan")
+	}
+	go func() {
+		select {
+		case pkg := <-BlobChan:
+			*rec <- pkg
+		}
+	}()
+	return nil
+}
