@@ -12,4 +12,8 @@ type (
 		SPath [256]int8
 		ByRes [128]uint8
 	}
+
+	Package struct {
+		data []byte
+	}
 )

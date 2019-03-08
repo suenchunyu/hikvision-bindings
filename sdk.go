@@ -17,6 +17,12 @@ type HikVisionSDK struct {
 var DefaultConfig = &HikVisionSDKConfig{}
 
 func Init(config *HikVisionSDKConfig) *HikVisionSDK {
-	initEnv(config)
-	return nil
+	env := initEnv(config)
+	return &HikVisionSDK{
+		env: env,
+	}
 }
+
+// TODO: Open real time player
+// TODO: Close real time player
+// TODO: Get real time player's stream data from callback function
