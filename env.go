@@ -5,6 +5,19 @@ package hik_vision_sdk
 /*
 #include "HCNetSDK.h"
 #include <stdlib.h>
+#include <string.h>
+
+	LONG wrapper_login(char *ip,WORD port,char *username,char *password) {
+		NET_DVR_USER_LOGIN_INFO login_info = {0};
+		login_info.bUseAsynLogin = 0;
+		strcpy(login_info.sDeviceAddress, ip);
+		login_info.wPort = port;
+		strcpy(login_info.sUserName, username);
+		strcpy(login_info.sPassword, password);
+
+		NET_DVR_DEVICEINFO_V40 device_info = {0};
+		return NET_DVR_Login_V40(&login_info, &device_info);
+	}
 */
 import "C"
 import (
@@ -28,8 +41,8 @@ type HikVisionEnv struct {
 }
 
 func initEnv(config *HikVisionSDKConfig) *HikVisionEnv {
+	blobChan := make(chan Package)
 	ip, port, username, password := parseSourceAddr(config.SourceAddr)
-	var device C.NET_DVR_DEVICEINFO
 	cIp := C.CString(ip)
 	defer C.free(unsafe.Pointer(cIp))
 	cUsername := C.CString(username)
@@ -47,30 +60,33 @@ func initEnv(config *HikVisionSDKConfig) *HikVisionEnv {
 
 	// init sdk
 	C.NET_DVR_SetSDKInitCfg(CFGSetAbility, unsafe.Pointer(abilityCfg))
-	if rt := ErrorCode(C.NET_DVR_Init()); rt != SUCCEED {
+	if rt := int(C.NET_DVR_Init()); rt != SUCCEED {
 		goto Error
 	}
 
+	userId = int(C.wrapper_login(cIp, C.WORD(port), cUsername, cPassword))
 	// active device
-	if userId = int(C.NET_DVR_Login(cIp, C.WORD(port), cUsername, cPassword,
-		device)); userId == LoginFailed {
+	if userId == LoginFailed {
 		goto Error
+	}
+
+	// New channel for blob to blobChanMap
+	blobChanMap.Store(userId, &blobChan)
+
+	return &HikVisionEnv{
+		UserID: userId,
+		Config: config,
 	}
 
 Error:
 	errCode := getLastError()
 	panic(getErrorMessage(errCode))
 
-	return &HikVisionEnv{
-		DeviceInfo: &device,
-		UserID:     userId,
-		Config:     config,
-	}
 }
 
 func parseSourceAddr(url string) (ip string, port int, username string, password string) {
 	temp := strings.Split(url, "hik://")
-	urls := strings.Split(temp[1], "@")
+	urls := strings.Split(temp[1], "|")
 	serverAndPort := strings.Split(urls[0], ":")
 	usernameAndPassword := strings.Split(urls[1], ":")
 	ip = serverAndPort[0]
@@ -84,13 +100,20 @@ func parseSourceAddr(url string) (ip string, port int, username string, password
 }
 
 func (e *HikVisionEnv) release() {
-	defer close(BlobChan)
+	blobChan, ok := blobChanMap.Load(e.UserID)
+	if !ok {
+		panic("Cannot load current environment's blob channel")
+	}
+	defer close(*blobChan.(*chan Package))
 	if rt := int(C.NET_DVR_Logout(C.LONG(e.UserID))); rt != SUCCEED {
+		println(rt)
 		goto Error
 	}
 	if rt := int(C.NET_DVR_Cleanup()); rt != SUCCEED {
+		println(rt)
 		goto Error
 	}
+
 Error:
 	errCode := getLastError()
 	panic(getErrorMessage(errCode))

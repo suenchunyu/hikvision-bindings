@@ -1,13 +1,13 @@
 package hik_vision_sdk
 
 //#cgo CFLAGS: -I./include/hikvision -I./include/internal
-//#cgo LDFLAGS: -L./lib64/hikvision -lhcnetsdk
+//#cgo LDFLAGS: -L./lib64/hikvision -lhcnetsdk -lhpr
 /*
 #include <stdlib.h>
 #include "HCNetSDK.h"
 #include "chan.h"
 
-void stdRealTimeDataCallBack(LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, DWORD dwUser) {
+void CALLBACK stdRealTimeDataCallBack(LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, DWORD dwUser) {
 	Package* pkg;
 	// ONLY STREAM DATA
 	if (dwDataType == NET_DVR_STREAMDATA) {
@@ -15,18 +15,31 @@ void stdRealTimeDataCallBack(LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, 
 
 		pkg->data = pBuffer;
 		pkg->length = dwBufSize;
+		pkg->id = dwUser;
 
 		publishPackage(pkg);
 	}
+}
+
+LONG wrapper_open_real_time_player(DWORD stream_type, DWORD link_mode, LONG user_id) {
+	NET_DVR_PREVIEWINFO preview_info = {0};
+	preview_info.lChannel = 1;
+	preview_info.dwStreamType = stream_type;
+	preview_info.dwLinkMode = link_mode;
+	preview_info.bBlocked = 1;
+
+	LONG real_player_handle = NET_DVR_RealPlay_V40(user_id, &preview_info, (REALDATACALLBACK) (stdRealTimeDataCallBack), NULL);
+
+	return real_player_handle;
 }
 */
 import "C"
 import (
 	"github.com/pkg/errors"
-	"unsafe"
+	"sync"
 )
 
-var BlobChan chan Package
+var blobChanMap *sync.Map
 
 type LinkMode int
 type StreamType int
@@ -43,20 +56,12 @@ const (
 )
 
 func init() {
-	BlobChan = make(chan Package)
+	blobChanMap = new(sync.Map)
 }
 
 func openPlayer(env *HikVisionEnv) error {
-	// build params
-	previewInfo := new(C.NET_DVR_PREVIEWINFO)
-	defer C.free(unsafe.Pointer(previewInfo))
-	previewInfo.hPlayWnd = 0
-	previewInfo.lChannel = C.int(1)
-	previewInfo.dwStreamType = C.uint(env.Config.StreamType)
-	previewInfo.dwLinkMode = C.uint(env.Config.LinkMode)
-	previewInfo.bBlocked = 1
-
-	playerHdl := int(C.NET_DVR_RealPlay_V40(C.int(env.UserID), previewInfo, C.REALDATACALLBACK(C.stdRealTimeDataCallBack), nil))
+	playerHdl := int(C.wrapper_open_real_time_player(C.DWORD(env.Config.StreamType),
+		C.DWORD(env.Config.LinkMode), C.LONG(env.UserID)))
 	if playerHdl < 0 {
 		goto Error
 	}
@@ -67,6 +72,7 @@ func openPlayer(env *HikVisionEnv) error {
 Error:
 	defer env.release()
 	errCode := getLastError()
+	println(errCode)
 	return errors.New(getErrorMessage(errCode))
 }
 

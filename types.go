@@ -13,7 +13,17 @@ type (
 		ByRes [128]uint8
 	}
 
+	DeviceInfo struct {
+		SSerialNumber     [48]uint8
+		ByAlarmInPortNum  uint8
+		ByAlarmOutPortNum uint8
+		ByDiskNum         uint8
+		ByDVRType         uint8
+		ByChanNum         uint8
+		ByStartChan       uint8
+	}
+
 	Package struct {
-		data []byte
+		Data []byte
 	}
 )

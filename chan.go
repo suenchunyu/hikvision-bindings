@@ -6,15 +6,22 @@ package hik_vision_sdk
 #include "chan.h"
 */
 import "C"
-import "unsafe"
+import (
+	"log"
+	"unsafe"
+)
 
 //export publishPackage
 func publishPackage(p *C.Package) {
 	var blob []byte = C.GoBytes(p.data, p.length)
-	defer C.free(unsafe.Pointer(p.data))
 	defer C.free(unsafe.Pointer(p))
 
-	BlobChan <- Package{
-		blob,
+	log.Printf("Received 1 package, length: %d\n", len(blob))
+	blobChan, ok := blobChanMap.Load(int(p.id))
+	if !ok {
+		panic("Cannot load current environment's blob channel")
+	}
+	*blobChan.(*chan Package) <- Package{
+		Data: blob,
 	}
 }
