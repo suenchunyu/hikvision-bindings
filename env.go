@@ -104,6 +104,7 @@ func (e *HikVisionEnv) release() {
 	if !ok {
 		panic("Cannot load current environment's blob channel")
 	}
+	blobChanMap.Delete(e.UserId)
 	defer close(*blobChan.(*chan Package))
 	if rt := int(C.NET_DVR_Logout(C.LONG(e.UserID))); rt != SUCCEED {
 		println(rt)
