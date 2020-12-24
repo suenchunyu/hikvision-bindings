@@ -9,7 +9,7 @@ func TestInit(t *testing.T) {
 		MaxLoginUser: 2048,
 		MaxAlarmNum:  2048,
 		SDKPath:      "",
-		SourceAddr:   "hik://10.12.141.44:8000|sensetime:Sensetime@",
+		SourceAddr:   "hik://localhost:8000|root:root",
 		LinkMode:     0,
 		StreamType:   0,
 	})
